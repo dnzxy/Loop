@@ -36,7 +36,7 @@ final class CarbEntryViewController: LoopChartsTableViewController, Identifiable
     var warningCarbEntryQuantity = LoopConstants.warningCarbEntryQuantity
 
     /// Entry configuration values. Must be set before presenting.
-    var absorptionTimePickerInterval = TimeInterval(minutes: 30)
+    var absorptionTimePickerInterval = TimeInterval(minutes: 15)
 
     var maxAbsorptionTime = LoopConstants.maxCarbAbsorptionTime
 
@@ -405,7 +405,7 @@ final class CarbEntryViewController: LoopChartsTableViewController, Identifiable
                         cell.datePicker.preferredDatePickerStyle = .wheels
                     }
                 #endif
-                cell.datePicker.maximumDate = date.addingTimeInterval(.hours(1))
+                cell.datePicker.maximumDate = date.addingTimeInterval(.hours(3))
                 cell.datePicker.minimumDate = date.addingTimeInterval(.hours(-12))
                 cell.datePicker.minuteInterval = 1
                 cell.date = date
