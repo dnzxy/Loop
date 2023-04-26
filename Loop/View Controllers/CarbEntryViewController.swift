@@ -143,12 +143,19 @@ final class CarbEntryViewController: LoopChartsTableViewController, Identifiable
     private var shouldDisplayMealtimeReminder = false {
         didSet {
             if shouldDisplayMealtimeReminder != oldValue {
-//                if futureMealStatus {
-//                    self.displayMealtimeReminderRow(rowType: DetailsRow.mealtimeReminder, isAddingRow: true)
-//                } else {
-//                    self.displayMealtimeReminderRow(rowType: DetailsRow.mealtimeReminder, isAddingRow: false)
-//                }
                 self.displayMealtimeReminderRow(rowType: DetailsRow.mealtimeReminder, isAddingRow: shouldDisplayMealtimeReminder)
+            }
+        }
+    }
+    
+    private var futureMealStatus: Bool = false
+    private var isFutureMeal: Bool {
+        get {
+            return futureMealStatus
+        }
+        set(newValue) {
+            if (newValue != isFutureMeal) {
+                futureMealStatus = newValue
             }
         }
     }
@@ -278,21 +285,20 @@ final class CarbEntryViewController: LoopChartsTableViewController, Identifiable
     }
     
     private func displayMealtimeReminderRow(rowType: DetailsRow, isAddingRow: Bool ) {
-        tableView.beginUpdates()
-        
-        // get index
-        // should be last row of section?
-        // section = last section index or use Section.details ?
-        let lastSectionIndex = tableView.numberOfSections - 1;
-        let lastRowIndex = tableView.numberOfRows(inSection: lastSectionIndex)
-        
-        if isAddingRow {
-            tableView.insertRows(at: [IndexPath(row: lastRowIndex, section: lastSectionIndex)], with: UITableView.RowAnimation.automatic)
-        } else {
-            tableView.deleteRows(at: [IndexPath(row: lastRowIndex-1, section: lastSectionIndex)], with: UITableView.RowAnimation.automatic)
+        if UserDefaults.standard.mealtimeReminderNotificationsEnabled {
+            tableView.beginUpdates()
+            
+            let lastSectionIndex = tableView.numberOfSections - 1;
+            let lastRowIndex = tableView.numberOfRows(inSection: lastSectionIndex)
+            
+            if isAddingRow {
+                tableView.insertRows(at: [IndexPath(row: lastRowIndex, section: lastSectionIndex)], with: UITableView.RowAnimation.automatic)
+            } else {
+                tableView.deleteRows(at: [IndexPath(row: lastRowIndex-1, section: lastSectionIndex)], with: UITableView.RowAnimation.automatic)
+            }
+            
+            tableView.endUpdates()
         }
-        
-        tableView.endUpdates()
     }
     
     private func displayWarningRow(rowType: WarningRow, isAddingRow: Bool = true ) {
@@ -505,18 +511,6 @@ final class CarbEntryViewController: LoopChartsTableViewController, Identifiable
                 cell.switch?.isOn = false
                 cell.switch?.addTarget(self, action: #selector(mealtimeReminderChanged), for: .valueChanged)
                 return cell
-            }
-        }
-    }
-    
-    private var futureMealStatus: Bool = false
-    private var isFutureMeal: Bool {
-        get {
-            return futureMealStatus
-        }
-        set(newValue) {
-            if (newValue != isFutureMeal) {
-                futureMealStatus = newValue
             }
         }
     }
@@ -804,7 +798,7 @@ extension CarbEntryViewController: DatePickerTableViewCellDelegate {
         case .date?:
             date = cell.date
             isFutureMeal = cell.date.timeIntervalSinceNow > 15
-            shouldDisplayMealtimeReminder = isFutureMeal
+            shouldDisplayMealtimeReminder = isFutureMeal && UserDefaults.standard.mealtimeReminderNotificationsEnabled
         case .absorptionTime?:
             absorptionTime = cell.duration
             absorptionTimeWasEdited = true

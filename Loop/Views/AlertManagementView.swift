@@ -59,6 +59,15 @@ struct AlertManagementView: View {
         )
     }
 
+    private var mealtimeReminderNotificationsEnabled: Binding<Bool> {
+        Binding(
+            get: { UserDefaults.standard.mealtimeReminderNotificationsEnabled },
+            set: { enabled in
+                UserDefaults.standard.mealtimeReminderNotificationsEnabled = enabled
+            }
+        )
+    }
+
     public init(checker: AlertPermissionsChecker, alertMuter: AlertMuter = AlertMuter()) {
         self.checker = checker
         self.alertMuter = alertMuter
@@ -75,6 +84,7 @@ struct AlertManagementView: View {
                 }
             }
             missedMealAlertSection
+            mealtimeReminderAlertSection
         }
         .navigationTitle(NSLocalizedString("Alert Management", comment: "Title of alert management screen"))
     }
@@ -124,11 +134,18 @@ struct AlertManagementView: View {
             Toggle(NSLocalizedString("Missed Meal Notifications", comment: "Title for missed meal notifications toggle"), isOn: missedMealNotificationsEnabled)
         }
     }
+    
+    private var mealtimeReminderAlertSection: some View {
+        Section(footer: DescriptiveText(label: NSLocalizedString("When activated, Loop can remind you of a meal you've pre-bolused for and it's time to eat. You can manually activate a mealtime reminder for each carbohydrate entry dated in the future (15min and more).", comment: "Description of mealtime reminder notifications."))) {
+            Toggle(NSLocalizedString("Mealtime Reminder Notifications", comment: "Title for mealtime reminder notifications toggle"), isOn: mealtimeReminderNotificationsEnabled)
+        }
+    }
 }
 
 extension UserDefaults {
     private enum Key: String {
         case missedMealNotificationsEnabled = "com.loopkit.Loop.MissedMealNotificationsEnabled"
+        case mealtimeReminderNotificationsEnabled = "com.loopkit.Loop.MealtimeReminderNotificationsEnabled"
     }
     
     var missedMealNotificationsEnabled: Bool {
@@ -137,6 +154,15 @@ extension UserDefaults {
         }
         set {
             set(newValue, forKey: Key.missedMealNotificationsEnabled.rawValue)
+        }
+    }
+    
+    var mealtimeReminderNotificationsEnabled: Bool {
+        get {
+            return object(forKey: Key.mealtimeReminderNotificationsEnabled.rawValue) as? Bool ?? false
+        }
+        set {
+            set(newValue, forKey: Key.mealtimeReminderNotificationsEnabled.rawValue)
         }
     }
 }
