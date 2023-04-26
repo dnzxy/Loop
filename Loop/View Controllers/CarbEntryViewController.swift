@@ -142,7 +142,8 @@ final class CarbEntryViewController: LoopChartsTableViewController, Identifiable
     
     private var shouldDisplayMealtimeReminder = false {
         didSet {
-            if shouldDisplayMealtimeReminder != oldValue && isFutureMeal {
+            if futureMealStatus {
+                shouldDisplayMealtimeReminder = futureMealStatus
                 self.displayMealtimeReminder(rowType: DetailsRow.mealtimeReminder, isAddingRow: true)
             }
         }
@@ -505,10 +506,19 @@ final class CarbEntryViewController: LoopChartsTableViewController, Identifiable
         }
     }
     
-    private var isFutureMeal: Bool {
-        return date.timeIntervalSinceNow >= 15 ? true : false
-    }    
+    private var futureMealStatus: Bool = false
     
+    private func updateFutureMeal(mealtime: Date) {
+        futureMealStatus = mealtime.timeIntervalSinceNow >= 15
+    }
+    
+    private var isFutureMeal = Bool() {
+        didSet {
+            if futureMealStatus != oldValue {
+                updateFutureMeal(mealtime: self.date)
+            }
+        }
+    }
     
     @objc private func mealtimeReminderChanged(_ sender: UISwitch) {
         if sender.isOn {
@@ -803,6 +813,7 @@ extension CarbEntryViewController: DatePickerTableViewCellDelegate {
         switch DetailsRow(rawValue: row) {
         case .date?:
             date = cell.date
+            updateFutureMeal(mealtime: cell.date)
         case .absorptionTime?:
             absorptionTime = cell.duration
             absorptionTimeWasEdited = true
