@@ -142,9 +142,13 @@ final class CarbEntryViewController: LoopChartsTableViewController, Identifiable
     
     private var shouldDisplayMealtimeReminder = false {
         didSet {
-            if futureMealStatus {
-                shouldDisplayMealtimeReminder = futureMealStatus
-                self.displayMealtimeReminder(rowType: DetailsRow.mealtimeReminder, isAddingRow: true)
+            if shouldDisplayMealtimeReminder != oldValue {
+//                if futureMealStatus {
+//                    self.displayMealtimeReminderRow(rowType: DetailsRow.mealtimeReminder, isAddingRow: true)
+//                } else {
+//                    self.displayMealtimeReminderRow(rowType: DetailsRow.mealtimeReminder, isAddingRow: false)
+//                }
+                self.displayMealtimeReminderRow(rowType: DetailsRow.mealtimeReminder, isAddingRow: shouldDisplayMealtimeReminder)
             }
         }
     }
@@ -273,24 +277,22 @@ final class CarbEntryViewController: LoopChartsTableViewController, Identifiable
         tableView.endUpdates()
     }
     
-    private func displayMealtimeReminder(rowType: DetailsRow, isAddingRow: Bool = true ) {
-        if shouldDisplayMealtimeReminder {
-            tableView.beginUpdates()
-            
-            // get index
-            // should be last row of section?
-            // section = last section index or use Section.details ?
-            let lastSectionIndex = tableView.numberOfSections - 1;
-            let lastRowIndex = tableView.numberOfRows(inSection: lastSectionIndex)
-            
-            if isAddingRow {
-                tableView.insertRows(at: [IndexPath(row: lastRowIndex, section: lastSectionIndex)], with: UITableView.RowAnimation.none)
-            } else {
-                tableView.deleteRows(at: [IndexPath(row: lastRowIndex, section: lastSectionIndex)], with: UITableView.RowAnimation.none)
-            }
-            
-            tableView.endUpdates()
+    private func displayMealtimeReminderRow(rowType: DetailsRow, isAddingRow: Bool ) {
+        tableView.beginUpdates()
+        
+        // get index
+        // should be last row of section?
+        // section = last section index or use Section.details ?
+        let lastSectionIndex = tableView.numberOfSections - 1;
+        let lastRowIndex = tableView.numberOfRows(inSection: lastSectionIndex)
+        
+        if isAddingRow {
+            tableView.insertRows(at: [IndexPath(row: lastRowIndex, section: lastSectionIndex)], with: UITableView.RowAnimation.automatic)
+        } else {
+            tableView.deleteRows(at: [IndexPath(row: lastRowIndex-1, section: lastSectionIndex)], with: UITableView.RowAnimation.automatic)
         }
+        
+        tableView.endUpdates()
     }
     
     private func displayWarningRow(rowType: WarningRow, isAddingRow: Bool = true ) {
@@ -332,7 +334,7 @@ final class CarbEntryViewController: LoopChartsTableViewController, Identifiable
                 return displayMissedMealWarning && displayOverrideWarning ? WarningRow.allCases.count : WarningRow.allCases.count - 1
             }
 
-            if section == Sections.details.rawValue && displayMealtimeReminder {
+            if displayMealtimeReminder {
                 return DetailsRow.allCases.count
             }
             
@@ -493,8 +495,9 @@ final class CarbEntryViewController: LoopChartsTableViewController, Identifiable
                 
                 return cell
             case .mealtimeReminder:
-                // TODO: show only when isFutureMeal = true && user has enabled meal reminder in notification settings
-                // TODO: clear notification
+                // TODO: show only when user has enabled meal reminder in notification settings
+                // TODO: notification handling (schedule only upon successful carb entry)
+                // TODO: edit existing meals necessary?
                 
                 let cell = tableView.dequeueReusableCell(withIdentifier: SwitchTableViewCell.className, for: indexPath) as! SwitchTableViewCell
                 cell.selectionStyle = .none
@@ -507,15 +510,13 @@ final class CarbEntryViewController: LoopChartsTableViewController, Identifiable
     }
     
     private var futureMealStatus: Bool = false
-    
-    private func updateFutureMeal(mealtime: Date) {
-        futureMealStatus = mealtime.timeIntervalSinceNow >= 15
-    }
-    
-    private var isFutureMeal = Bool() {
-        didSet {
-            if futureMealStatus != oldValue {
-                updateFutureMeal(mealtime: self.date)
+    private var isFutureMeal: Bool {
+        get {
+            return futureMealStatus
+        }
+        set(newValue) {
+            if (newValue != isFutureMeal) {
+                futureMealStatus = newValue
             }
         }
     }
@@ -548,17 +549,6 @@ final class CarbEntryViewController: LoopChartsTableViewController, Identifiable
 //        let request = UNNotificationRequest(identifier: identifier, content: content, trigger: trigger)
 //        center.add(request)
     }
-
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
     
     override func tableView(_ tableView: UITableView, willDisplay cell: UITableViewCell, forRowAt indexPath: IndexPath) {
         switch Sections(rawValue: Sections.section(for: indexPath, displayWarningSection: shouldDisplayWarning)) {
@@ -813,7 +803,8 @@ extension CarbEntryViewController: DatePickerTableViewCellDelegate {
         switch DetailsRow(rawValue: row) {
         case .date?:
             date = cell.date
-            updateFutureMeal(mealtime: cell.date)
+            isFutureMeal = cell.date.timeIntervalSinceNow > 15
+            shouldDisplayMealtimeReminder = isFutureMeal
         case .absorptionTime?:
             absorptionTime = cell.duration
             absorptionTimeWasEdited = true
