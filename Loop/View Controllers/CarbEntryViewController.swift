@@ -148,6 +148,8 @@ final class CarbEntryViewController: LoopChartsTableViewController, Identifiable
         }
     }
     
+    private var isMealtimeReminderEnabled = false
+    
     private var futureMealStatus: Bool = false
     private var isFutureMeal: Bool {
         get {
@@ -517,31 +519,8 @@ final class CarbEntryViewController: LoopChartsTableViewController, Identifiable
     
     @objc private func mealtimeReminderChanged(_ sender: UISwitch) {
         if sender.isOn {
-            setMealtimeReminderNotification()
+            isMealtimeReminderEnabled = true
         }
-    }
-    
-    private func setMealtimeReminderNotification() {
-        print("Set Notification...")
-        let identifier = "mealtimeReminderNotificationId"
-        let center = UNUserNotificationCenter.current()
-        center.removeDeliveredNotifications(withIdentifiers: [identifier])
-        center.removePendingNotificationRequests(withIdentifiers: [identifier])
-        center.removeAllDeliveredNotifications()
-        center.removeAllPendingNotificationRequests()
-//
-//        let content = UNMutableNotificationContent()
-//        content.title = "Meal Reminder"
-//        content.body = "You pre-bolused for a meal at \(self.date). It's time to eat now!"
-//        content.sound = UNNotificationSound.default
-//
-//        var dateComponents = DateComponents()
-//        dateComponents.second = 10
-//        //let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 5, repeats: false)
-//        let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: false)
-//
-//        let request = UNNotificationRequest(identifier: identifier, content: content, trigger: trigger)
-//        center.add(request)
     }
     
     override func tableView(_ tableView: UITableView, willDisplay cell: UITableViewCell, forRowAt indexPath: IndexPath) {
@@ -643,7 +622,8 @@ final class CarbEntryViewController: LoopChartsTableViewController, Identifiable
             screenWidth: UIScreen.main.bounds.width,
             originalCarbEntry: originalCarbEntry,
             potentialCarbEntry: updatedEntry,
-            selectedCarbAbsorptionTimeEmoji: selectedDefaultAbsorptionTimeEmoji
+            selectedCarbAbsorptionTimeEmoji: selectedDefaultAbsorptionTimeEmoji,
+            isMealtimeReminderEnabled: isMealtimeReminderEnabled
         )
         Task {
             await viewModel.generateRecommendationAndStartObserving()

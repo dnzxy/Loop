@@ -153,6 +153,11 @@ final class BolusEntryViewModel: ObservableObject {
 
     var analyticsServicesManager: AnalyticsServicesManager?
     
+    var mealtimeReminderManager: MealtimeReminderManager?
+    
+    var isMealtimeReminderEnabled: Bool?
+    
+    
     // MARK: - Initialization
 
     init(
@@ -165,7 +170,8 @@ final class BolusEntryViewModel: ObservableObject {
         originalCarbEntry: StoredCarbEntry? = nil,
         potentialCarbEntry: NewCarbEntry? = nil,
         selectedCarbAbsorptionTimeEmoji: String? = nil,
-        isManualGlucoseEntryEnabled: Bool = false
+        isManualGlucoseEntryEnabled: Bool = false,
+        isMealtimeReminderEnabled: Bool? = false
     ) {
         self.delegate = delegate
         self.now = now
@@ -184,6 +190,8 @@ final class BolusEntryViewModel: ObservableObject {
         self.selectedCarbAbsorptionTimeEmoji = selectedCarbAbsorptionTimeEmoji
         
         self.isManualGlucoseEntryEnabled = isManualGlucoseEntryEnabled
+        
+        self.isMealtimeReminderEnabled = isMealtimeReminderEnabled
         
         self.chartDateInterval = DateInterval(start: Date(timeInterval: .hours(-1), since: now()), duration: .hours(7))
         
@@ -404,6 +412,10 @@ final class BolusEntryViewModel: ObservableObject {
             if let storedCarbEntry = await saveCarbEntry(carbEntry, replacingEntry: originalCarbEntry) {
                 self.dosingDecision.carbEntry = storedCarbEntry
                 self.analyticsServicesManager?.didAddCarbs(source: "Phone", amount: storedCarbEntry.quantity.doubleValue(for: .gram()))
+                
+                if isMealtimeReminderEnabled ?? false {
+                    self.mealtimeReminderManager?.generateMealtimeReminder(carbEntry: storedCarbEntry)
+                }
             } else {
                 self.presentAlert(.carbEntryPersistenceFailure)
                 return false
