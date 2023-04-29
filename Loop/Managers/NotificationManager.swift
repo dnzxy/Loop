@@ -254,6 +254,56 @@ extension NotificationManager {
 
         UNUserNotificationCenter.current().add(request)
     }
+    
+    static func sendMealtimeReminderNotification(mealtime: Date) {
+        let notification = UNMutableNotificationContent()
+        // Mealtime Reminder can expire 5 minutes after mealtime.
+        let notificationExpiration = mealtime.addingTimeInterval(.minutes(5))
+        
+        notification.title = String(format: NSLocalizedString("Mealtime Reminder", comment: "Notification title for a scheduled mealtime reminder."))
+        notification.body = String(format: NSLocalizedString("You pre-bolused for a meal. It's time to eat now!", comment: "Notification description for a scheduled mealtime reminder."))
+        notification.sound = .default
+        notification.userInfo = ["scheduledDate": mealtime]
+        
+        let triggerAt = Calendar.current.dateComponents([.hour, .minute], from: mealtime)
+        let trigger = UNCalendarNotificationTrigger(dateMatching: triggerAt, repeats: false)
+        
+        let request = UNNotificationRequest(
+            identifier: LoopNotificationCategory.mealtimeReminder.rawValue,
+            content: notification,
+            trigger: trigger
+        )
+
+        UNUserNotificationCenter.current().add(request)
+    }
+    
+    static func removeUnnecessaryMealtimeReminderNotifications(reminderDates: [Date]) {
+        let notificationCenter = UNUserNotificationCenter.current()
+        var identifiersToRemove: [String] = []
+        
+        notificationCenter.getPendingNotificationRequests { requests in
+            for request in requests {
+                
+                guard
+                    request.identifier == LoopNotificationCategory.mealtimeReminder.rawValue,
+                    let scheduledDate = request.content.userInfo["scheduledDate"] as? Date,
+                    !reminderDates.contains(scheduledDate)
+                else {
+                    continue
+                }
+                
+                identifiersToRemove.append(request.identifier)
+                break
+            }
+            
+            guard identifiersToRemove.count > 0 else {
+                return
+            }
+            
+            print("Removed notification")
+            notificationCenter.removeDeliveredNotifications(withIdentifiers: identifiersToRemove)
+        }
+    }
 
     static func removeExpiredMealNotifications(now: Date = Date()) {
         let notificationCenter = UNUserNotificationCenter.current()

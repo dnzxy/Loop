@@ -630,6 +630,8 @@ final class CarbEntryViewController: LoopChartsTableViewController, Identifiable
         }
 
         viewModel.analyticsServicesManager = deviceManager.analyticsServicesManager
+        viewModel.mealtimeReminderManager = deviceManager.loopManager.mealtimeReminderManager
+        
 
         let bolusEntryView = BolusEntryView(viewModel: viewModel).environmentObject(deviceManager.displayGlucoseUnitObservable)
 

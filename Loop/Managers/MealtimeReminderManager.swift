@@ -22,21 +22,16 @@ class MealtimeReminderManager {
         futureCarbEntries = []
     }
     
-    func getCarbStoreUpdates() {
-        // get updates from carb store
-        // if carb entry no longer in carb store, delete from futureCarbEntries
-        // if carb entry has changed, update local copy ?
-    }
-    
     func generateMealtimeReminder(carbEntry: StoredCarbEntry) {
-        // store carb entries (flagged for mealtime reminder in carb entry view) in memory
+        var reminderDates = futureCarbEntries.map({ $0.startDate })
+        NotificationManager.removeUnnecessaryMealtimeReminderNotifications(reminderDates: reminderDates)
+        
         futureCarbEntries.append(carbEntry)
-                
+        reminderDates.append(carbEntry.startDate)
+        
+        for reminderDate in reminderDates {
+            NotificationManager.sendMealtimeReminderNotification(mealtime: reminderDate)
+        }
     }
     
-    func manageMealtimeReminderNotifications() {
-        // schedule notifications
-        
-        // remove unwanted pending notifications
-    }
 }
