@@ -503,8 +503,6 @@ final class CarbEntryViewController: LoopChartsTableViewController, Identifiable
                 
                 return cell
             case .mealtimeReminder:
-                // TODO: show only when user has enabled meal reminder in notification settings
-                // TODO: notification handling (schedule only upon successful carb entry)
                 // TODO: edit existing meals necessary?
                 
                 let cell = tableView.dequeueReusableCell(withIdentifier: SwitchTableViewCell.className, for: indexPath) as! SwitchTableViewCell
