@@ -277,7 +277,7 @@ extension NotificationManager {
         UNUserNotificationCenter.current().add(request)
     }
     
-    static func removeUnnecessaryMealtimeReminderNotifications(reminderDates: [Date]) {
+    static func removeUnnecessaryMealtimeReminderNotifications(reminderDates: Set<Date>) {
         let notificationCenter = UNUserNotificationCenter.current()
         var identifiersToRemove: [String] = []
         
