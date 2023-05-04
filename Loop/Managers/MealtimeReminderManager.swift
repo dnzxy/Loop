@@ -29,9 +29,11 @@ class MealtimeReminderManager {
         // if carb entry has changed, update local copy ?
     }
     
+    func hasEntryMealtimeReminder(carbEntry: StoredCarbEntry) -> Bool {
+        return futureCarbEntries.contains(carbEntry)
+    }
+    
     func generateMealtimeReminder(carbEntry: StoredCarbEntry) {
-        let now = Date()
-        
         // keep future entries in-memory store clean
         self.removeExpiredEntries()
         

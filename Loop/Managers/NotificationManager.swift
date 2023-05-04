@@ -299,10 +299,28 @@ extension NotificationManager {
             guard identifiersToRemove.count > 0 else {
                 return
             }
-            
-            print("Removed notification")
-            notificationCenter.removeDeliveredNotifications(withIdentifiers: identifiersToRemove)
         }
+        
+        let now = Date()
+        
+        notificationCenter.getDeliveredNotifications { notifications in
+            for notification in notifications{
+                let request = notification.request
+                
+                guard
+                    request.identifier == LoopNotificationCategory.mealtimeReminder.rawValue,
+                    let scheduledDate = request.content.userInfo["scheduledDate"] as? Date,
+                    scheduledDate < now
+                else {
+                    continue
+                }
+                
+                identifiersToRemove.append(request.identifier)
+                break
+            }
+        }
+        
+        notificationCenter.removeDeliveredNotifications(withIdentifiers: identifiersToRemove)
     }
 
     static func removeExpiredMealNotifications(now: Date = Date()) {
