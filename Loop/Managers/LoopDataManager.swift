@@ -212,7 +212,7 @@ final class LoopDataManager {
         // Turn off preMeal when going into closed loop off mode
         // Cancel any active temp basal when going into closed loop off mode
         // The dispatch is necessary in case this is coming from a didSet already on the settings struct.
-        self.automaticDosingStatus.$isClosedLoop
+        self.automaticDosingStatus.$automaticDosingEnabled
             .removeDuplicates()
             .dropFirst()
             .receive(on: DispatchQueue.main)
@@ -220,7 +220,7 @@ final class LoopDataManager {
                 self.mutateSettings { settings in
                     settings.clearOverride(matching: .preMeal)
                 }
-                self.cancelActiveTempBasal(for: .closedLoopDisabled)
+                self.cancelActiveTempBasal(for: .automaticDosingDisabled)
             } }
             .store(in: &cancellables)
     }
@@ -597,7 +597,7 @@ extension LoopDataManager {
     }
 
     private enum CancelActiveTempBasalReason: String {
-        case closedLoopDisabled
+        case automaticDosingDisabled
         case unreliableCGMData
         case maximumBasalRateChanged
     }
@@ -855,7 +855,7 @@ extension LoopDataManager {
 
             var (dosingDecision, error) = self.update(for: .loop)
 
-            if error == nil, self.automaticDosingStatus.isClosedLoop == true {
+            if error == nil, self.automaticDosingStatus.automaticDosingEnabled == true {
                 error = self.enactRecommendedAutomaticDose()
             } else {
                 self.logger.default("Not adjusting dosing during open loop.")
@@ -878,26 +878,28 @@ extension LoopDataManager {
         logger.default("Loop ended")
         notify(forChange: .loopFinished)
 
-        let carbEffectStart = now().addingTimeInterval(-MissedMealSettings.maxRecency)
-        carbStore.getGlucoseEffects(start: carbEffectStart, end: now(), effectVelocities: insulinCounteractionEffects) {[weak self] result in
-            guard
-                let self = self,
-                case .success((_, let carbEffects)) = result
-            else {
-                if case .failure(let error) = result {
-                    self?.logger.error("Failed to fetch glucose effects to check for missed meal: %{public}@", String(describing: error))
+        if FeatureFlags.missedMealNotifications {
+            let carbEffectStart = now().addingTimeInterval(-MissedMealSettings.maxRecency)
+            carbStore.getGlucoseEffects(start: carbEffectStart, end: now(), effectVelocities: insulinCounteractionEffects) {[weak self] result in
+                guard
+                    let self = self,
+                    case .success((_, let carbEffects)) = result
+                else {
+                    if case .failure(let error) = result {
+                        self?.logger.error("Failed to fetch glucose effects to check for missed meal: %{public}@", String(describing: error))
+                    }
+                    return
                 }
-                return
+                
+                self.mealDetectionManager.generateMissedMealNotificationIfNeeded(
+                    insulinCounteractionEffects: self.insulinCounteractionEffects,
+                    carbEffects: carbEffects,
+                    pendingAutobolusUnits: self.recommendedAutomaticDose?.recommendation.bolusUnits,
+                    bolusDurationEstimator: { [unowned self] bolusAmount in
+                        return self.delegate?.loopDataManager(self, estimateBolusDuration: bolusAmount)
+                    }
+                )
             }
-            
-            self.mealDetectionManager.generateMissedMealNotificationIfNeeded(
-                insulinCounteractionEffects: self.insulinCounteractionEffects,
-                carbEffects: carbEffects,
-                pendingAutobolusUnits: self.recommendedAutomaticDose?.recommendation.bolusUnits,
-                bolusDurationEstimator: { [unowned self] bolusAmount in
-                    return self.delegate?.loopDataManager(self, estimateBolusDuration: bolusAmount)
-                }
-            )
         }
 
         // 5 second delay to allow stores to cache data before it is read by widget
