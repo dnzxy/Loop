@@ -22,7 +22,7 @@ class MealtimeReminderManager {
         futureCarbEntries = []
     }
     
-    // TODO: better way to keep in-memory `futureCarbEntries` in sync with carbStore
+    // TODO: better way to keep in-memory `futureCarbEntries` in sync with carbStore?
     func getCarbStoreUpdates() {
         // get updates from carb store
         // if carb entry no longer in carb store, delete from futureCarbEntries
@@ -60,7 +60,7 @@ class MealtimeReminderManager {
     func removeExpiredEntries() {
         let now = Date()
         
-        self.futureCarbEntries = futureCarbEntries.filter({$0.startDate > now})
+        futureCarbEntries = futureCarbEntries.filter({$0.startDate > now})
     }
     
 }
