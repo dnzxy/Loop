@@ -228,7 +228,7 @@ class MealDetectionManager {
     // Internal for unit testing
     func manageMealNotifications(for status: MissedMealStatus, pendingAutobolusUnits: Double? = nil, bolusDurationEstimator getBolusDuration: (Double) -> TimeInterval?) {
         // We should remove expired notifications regardless of whether or not there was a meal
-        NotificationManager.removeExpiredMealNotifications()
+        NotificationManager.removeExpiredMealNotifications(notificationCategory: LoopNotificationCategory.missedMeal)
         
         // Figure out if we should deliver a notification
         let now = self.currentDate

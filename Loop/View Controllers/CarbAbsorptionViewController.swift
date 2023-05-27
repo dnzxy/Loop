@@ -450,11 +450,14 @@ final class CarbAbsorptionViewController: LoopChartsTableViewController, Identif
     public override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
         if editingStyle == .delete {
             let status = carbStatuses[indexPath.row]
+            
             deviceManager.loopManager.deleteCarbEntry(status.entry) { (result) -> Void in
                 DispatchQueue.main.async {
                     switch result {
                     case .success:
                         self.isEditing = false
+                        // Deleted entry may have scheduled mealtime reminder notification; delete it
+                        NotificationManager.removePendingMealtimeReminderNotification(carbEntryIdentifier: status.entry.syncIdentifier!)
                         break  // Notification will trigger update
                     case .failure(let error):
                         self.refreshContext.update(with: .carbs)

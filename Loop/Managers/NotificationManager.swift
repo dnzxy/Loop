@@ -255,19 +255,62 @@ extension NotificationManager {
         UNUserNotificationCenter.current().add(request)
     }
     
-    static func sendMealtimeReminderNotification(mealtime: Date) {
+    static func handleMealtimeReminderNotificationScheduling(carbEntry: StoredCarbEntry) {
+//        self.removePendingMealtimeReminderNotification(carbEntryIdentifier: carbEntry.syncIdentifier ?? "")
+        
+        self.removeExpiredMealNotifications(notificationCategory: LoopNotificationCategory.mealtimeReminder)
+        
+        self.sendMealtimeReminderNotification(mealtime: carbEntry.startDate, carbEntryIdentifier: carbEntry.syncIdentifier!)
+        
+        // check if there is a scheduled notification for carbEntry.syncIdentifier scheduled
+        // if yes:
+        //      delete scheduled notification, then continue
+        // if no:
+        //      continue
+        // clean up expired notifications
+        // then: create meal notification
+    }
+    
+    static func removePendingMealtimeReminderNotification(carbEntryIdentifier: String) {
+        let notificationCenter = UNUserNotificationCenter.current()
+        var identifiersToRemove: [String] = []
+
+        notificationCenter.getPendingNotificationRequests { pendingNotifications in
+            for notification in pendingNotifications {
+                
+                guard
+//                    notification.identifier == "\(LoopNotificationCategory.mealtimeReminder)\(carbEntryIdentifier)",
+                    notification.identifier == LoopNotificationCategory.mealtimeReminder.rawValue,
+                    let scheduledCarbEntryIdentifier = notification.content.userInfo["carbEntryIdentifier"] as? String,
+                    scheduledCarbEntryIdentifier == carbEntryIdentifier
+                else {
+                    continue
+                }
+
+                identifiersToRemove.append(notification.identifier)
+            }
+            
+            notificationCenter.removePendingNotificationRequests(withIdentifiers: identifiersToRemove)
+        }
+    }
+    
+    private static func sendMealtimeReminderNotification(mealtime: Date, carbEntryIdentifier: String) {
         let notification = UNMutableNotificationContent()
         // Mealtime Reminder can expire 5 minutes after mealtime.
-        let notificationExpiration = mealtime.addingTimeInterval(.minutes(5))
-        
+        let expirationDate = mealtime.addingTimeInterval(.minutes(5))
+
         notification.title = String(format: NSLocalizedString("Mealtime Reminder", comment: "Notification title for a scheduled mealtime reminder."))
-        notification.body = String(format: NSLocalizedString("You pre-bolused for a meal. It's time to eat now!", comment: "Notification description for a scheduled mealtime reminder."))
+        notification.body = String(format: NSLocalizedString("It's time to eat now!", comment: "Notification description for a scheduled mealtime reminder."))
         notification.sound = .default
-        notification.userInfo = ["scheduledDate": mealtime]
         
+        notification.userInfo = [
+            LoopNotificationUserInfoKey.carbEntryIdentifier.rawValue: carbEntryIdentifier,
+            LoopNotificationUserInfoKey.expirationDate.rawValue: expirationDate,
+        ]
+
         let triggerAt = Calendar.current.dateComponents([.hour, .minute], from: mealtime)
         let trigger = UNCalendarNotificationTrigger(dateMatching: triggerAt, repeats: false)
-        
+
         let request = UNNotificationRequest(
             identifier: LoopNotificationCategory.mealtimeReminder.rawValue,
             content: notification,
@@ -276,54 +319,9 @@ extension NotificationManager {
 
         UNUserNotificationCenter.current().add(request)
     }
-    
-    static func removeUnnecessaryMealtimeReminderNotifications(reminderDates: Set<Date>) {
-        let notificationCenter = UNUserNotificationCenter.current()
-        var identifiersToRemove: [String] = []
-        
-        notificationCenter.getPendingNotificationRequests { requests in
-            for request in requests {
-                
-                guard
-                    request.identifier == LoopNotificationCategory.mealtimeReminder.rawValue,
-                    let scheduledDate = request.content.userInfo["scheduledDate"] as? Date,
-                    !reminderDates.contains(scheduledDate)
-                else {
-                    continue
-                }
-                
-                identifiersToRemove.append(request.identifier)
-                break
-            }
-            
-            guard identifiersToRemove.count > 0 else {
-                return
-            }
-        }
-        
-        let now = Date()
-        
-        notificationCenter.getDeliveredNotifications { notifications in
-            for notification in notifications{
-                let request = notification.request
-                
-                guard
-                    request.identifier == LoopNotificationCategory.mealtimeReminder.rawValue,
-                    let scheduledDate = request.content.userInfo["scheduledDate"] as? Date,
-                    scheduledDate < now
-                else {
-                    continue
-                }
-                
-                identifiersToRemove.append(request.identifier)
-                break
-            }
-        }
-        
-        notificationCenter.removeDeliveredNotifications(withIdentifiers: identifiersToRemove)
-    }
 
-    static func removeExpiredMealNotifications(now: Date = Date()) {
+
+    static func removeExpiredMealNotifications(now: Date = Date(), notificationCategory: LoopNotificationCategory) {
         let notificationCenter = UNUserNotificationCenter.current()
         var identifiersToRemove: [String] = []
         
@@ -332,7 +330,7 @@ extension NotificationManager {
                 let request = notification.request
                 
                 guard
-                    request.identifier == LoopNotificationCategory.missedMeal.rawValue,
+                    request.identifier == notificationCategory.rawValue,
                     let expirationDate = request.content.userInfo[LoopNotificationUserInfoKey.expirationDate.rawValue] as? Date,
                     expirationDate < now
                 else {

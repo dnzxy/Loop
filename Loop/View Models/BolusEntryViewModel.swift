@@ -161,8 +161,6 @@ final class BolusEntryViewModel: ObservableObject {
 
     var analyticsServicesManager: AnalyticsServicesManager?
     
-    var mealtimeReminderManager: MealtimeReminderManager?
-    
     var isMealtimeReminderEnabled: Bool?
     
     
@@ -420,7 +418,9 @@ final class BolusEntryViewModel: ObservableObject {
                 self.analyticsServicesManager?.didAddCarbs(source: "Phone", amount: storedCarbEntry.quantity.doubleValue(for: .gram()))
                 
                 if isMealtimeReminderEnabled ?? false {
-                    self.mealtimeReminderManager?.generateMealtimeReminder(carbEntry: storedCarbEntry)
+                    NotificationManager.handleMealtimeReminderNotificationScheduling(carbEntry: storedCarbEntry)
+                } else {
+                    NotificationManager.removePendingMealtimeReminderNotification(carbEntryIdentifier: storedCarbEntry.syncIdentifier!)
                 }
             } else {
                 self.presentAlert(.carbEntryPersistenceFailure)

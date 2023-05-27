@@ -32,8 +32,6 @@ final class LoopDataManager {
     private let carbStore: CarbStoreProtocol
     
     private let mealDetectionManager: MealDetectionManager
-    
-    let mealtimeReminderManager: MealtimeReminderManager
 
     private let doseStore: DoseStoreProtocol
 
@@ -119,7 +117,7 @@ final class LoopDataManager {
             maximumBolus: settings.maximumBolus
         )
         
-        self.mealtimeReminderManager = MealtimeReminderManager()
+//        self.mealtimeReminderManager = MealtimeReminderManager()
         
         self.lockedPumpInsulinType = Locked(pumpInsulinType)
 

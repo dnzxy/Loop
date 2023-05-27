@@ -34,27 +34,29 @@ class MealtimeReminderManager {
     }
     
     func generateMealtimeReminder(carbEntry: StoredCarbEntry) {
-        // keep future entries in-memory store clean
-        self.removeExpiredEntries()
+//        // keep future entries in-memory store clean
+//        self.removeExpiredEntries()
+//
+//        // store carb entries (flagged for mealtime reminder in carb entry view) in memory
+//        futureCarbEntries.append(carbEntry)
+//
+//        // collect all reminder dates, set takes care of duplicates
+//        var reminderDates = Set(futureCarbEntries.map({ $0.startDate }))
+//
+//        // remove all notifications with dates that are already in there
+//        NotificationManager.removeUnnecessaryMealtimeReminderNotifications(reminderDates: reminderDates)
+//
+//        // add new future entry date to set of reminder dates
+//        if !reminderDates.contains(carbEntry.startDate) {
+//            reminderDates.insert(carbEntry.startDate)
+//        }
+//
+//        // (re-)schedule reminder(s)
+//        for reminderDate in reminderDates {
+//            NotificationManager.sendMealtimeReminderNotification(mealtime: reminderDate)
+//        }
         
-        // store carb entries (flagged for mealtime reminder in carb entry view) in memory
-        futureCarbEntries.append(carbEntry)
-        
-        // collect all reminder dates, set takes care of duplicates
-        var reminderDates = Set(futureCarbEntries.map({ $0.startDate }))
-        
-        // remove all notifications with dates that are already in there
-        NotificationManager.removeUnnecessaryMealtimeReminderNotifications(reminderDates: reminderDates)
-        
-        // add new future entry date to set of reminder dates
-        if !reminderDates.contains(carbEntry.startDate) {
-            reminderDates.insert(carbEntry.startDate)
-        }
-        
-        // (re-)schedule reminder(s)
-        for reminderDate in reminderDates {
-            NotificationManager.sendMealtimeReminderNotification(mealtime: reminderDate)
-        }
+//        NotificationManager.sendMealtimeReminderNotification(carbEntry: carbEntrymealtime: reminderDate)
     }
     
     func removeExpiredEntries() {
@@ -64,3 +66,26 @@ class MealtimeReminderManager {
     }
     
 }
+
+
+
+
+
+
+
+
+
+
+// Notification Manager
+
+// schedules meal notifications:
+// use StoredCarbEntry syncIdentifier as its unique
+
+// -> call from bolusViewModel.saveCarbEnty
+// if theres a notif. -> take the replaceEntry, take that UUID, delete the corresponding notif.
+// --> take new entry's UUID -> schedule notif w/ UUID
+
+// deleteCarbEntry -> carb absorption view controller
+// -> take entryToDel UUID -> delete scheduled notif.
+
+

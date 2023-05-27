@@ -152,18 +152,8 @@ final class CarbEntryViewController: LoopChartsTableViewController, Identifiable
     
     private var isMealtimeReminderEnabled = false
     
-    private var futureMealStatus: Bool = false
-    private var isFutureMeal: Bool {
-        get {
-            return futureMealStatus
-        }
-        set(newValue) {
-            if (newValue != isFutureMeal) {
-                futureMealStatus = newValue
-            }
-        }
-    }
-
+    private var isFutureMeal = false
+    
     var updatedCarbEntry: NewCarbEntry? {
         if  let lastEntryDate = lastEntryDate,
             let quantity = quantity,
@@ -219,10 +209,24 @@ final class CarbEntryViewController: LoopChartsTableViewController, Identifiable
         if originalCarbEntry != nil {
             title = NSLocalizedString("carb-entry-title-edit", value: "Edit Carb Entry", comment: "The title of the view controller to edit an existing carb entry")
             
-            if deviceManager.loopManager.mealtimeReminderManager.hasEntryMealtimeReminder(carbEntry: originalCarbEntry!) {
-                shouldDisplayMealtimeReminder = true
-                
+            var hasPending = false
+            UNUserNotificationCenter.current().getPendingNotificationRequests { pendingNotifications in
+                for notification in pendingNotifications {
+                    
+                    guard
+                        notification.identifier == LoopNotificationCategory.mealtimeReminder.rawValue,
+                        let scheduledCarbEntryIdentifier = notification.content.userInfo["carbEntryIdentifier"] as? String,
+                        scheduledCarbEntryIdentifier == self.originalCarbEntry!.syncIdentifier!
+                    else {
+                        continue
+                    }
+                    
+                    self.isMealtimeReminderEnabled = true
+                    break;
+                }
             }
+            
+            shouldDisplayMealtimeReminder = hasPending || originalCarbEntry!.startDate > Date()
         } else {
             title = NSLocalizedString("carb-entry-title-add", value: "Add Carb Entry", comment: "The title of the view controller to create a new carb entry")
         }
@@ -518,9 +522,9 @@ final class CarbEntryViewController: LoopChartsTableViewController, Identifiable
                 cell.selectionStyle = .none
                 cell.textLabel?.text = NSLocalizedString("Meal Reminder", comment: "Text of the meal time reminder notification cell")
                 
-                if originalCarbEntry != nil && deviceManager.loopManager.mealtimeReminderManager.hasEntryMealtimeReminder(carbEntry: originalCarbEntry!) {
-                    isMealtimeReminderEnabled = true
-                }
+//                if originalCarbEntry != nil && NotificationManager.hasPendingMealtimeReminderNotification(carbEntry: originalCarbEntry!) {
+//                    isMealtimeReminderEnabled = true
+//                }
                 cell.switch?.isOn = isMealtimeReminderEnabled
                 cell.switch?.addTarget(self, action: #selector(mealtimeReminderChanged), for: .valueChanged)
                 return cell
@@ -529,9 +533,7 @@ final class CarbEntryViewController: LoopChartsTableViewController, Identifiable
     }
     
     @objc private func mealtimeReminderChanged(_ sender: UISwitch) {
-        if sender.isOn {
-            isMealtimeReminderEnabled = true
-        }
+        isMealtimeReminderEnabled = sender.isOn
     }
     
     override func tableView(_ tableView: UITableView, willDisplay cell: UITableViewCell, forRowAt indexPath: IndexPath) {
@@ -641,7 +643,6 @@ final class CarbEntryViewController: LoopChartsTableViewController, Identifiable
         }
 
         viewModel.analyticsServicesManager = deviceManager.analyticsServicesManager
-        viewModel.mealtimeReminderManager = deviceManager.loopManager.mealtimeReminderManager
         
 
         let bolusEntryView = BolusEntryView(viewModel: viewModel).environmentObject(deviceManager.displayGlucoseUnitObservable)
@@ -790,9 +791,12 @@ extension CarbEntryViewController: DatePickerTableViewCellDelegate {
         switch DetailsRow(rawValue: row) {
         case .date?:
             date = cell.date
+            
             hasPendingDateChange = cell.date != originalCarbEntry?.startDate
             isFutureMeal = cell.date.timeIntervalSinceNow > 15
-            shouldDisplayMealtimeReminder = isFutureMeal && UserDefaults.standard.mealtimeReminderNotificationsEnabled
+            
+            let editingAndEnabled = originalCarbEntry?.startDate != nil && isMealtimeReminderEnabled
+            shouldDisplayMealtimeReminder = (isFutureMeal || editingAndEnabled) && UserDefaults.standard.mealtimeReminderNotificationsEnabled
         case .absorptionTime?:
             absorptionTime = cell.duration
             absorptionTimeWasEdited = true
