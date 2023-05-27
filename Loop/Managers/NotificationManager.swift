@@ -319,6 +319,57 @@ extension NotificationManager {
 
         UNUserNotificationCenter.current().add(request)
     }
+<<<<<<< Updated upstream
+=======
+    
+    static func removeUnnecessaryMealtimeReminderNotifications(reminderDates: Set<Date>) {
+        let notificationCenter = UNUserNotificationCenter.current()
+        var identifiersToRemove: [String] = []
+        
+        // clean up scheduled notifications, as carb entries with mealtime reminder may be edited
+        notificationCenter.getPendingNotificationRequests { requests in
+            for request in requests {
+                
+                guard
+                    request.identifier == LoopNotificationCategory.mealtimeReminder.rawValue,
+                    let scheduledDate = request.content.userInfo["scheduledDate"] as? Date,
+                    !reminderDates.contains(scheduledDate)
+                else {
+                    continue
+                }
+                
+                identifiersToRemove.append(request.identifier)
+                break
+            }
+            
+            guard identifiersToRemove.count > 0 else {
+                return
+            }
+        }
+        
+        // remove expired mealtime reminder notifications
+        let now = Date()
+        
+        notificationCenter.getDeliveredNotifications { notifications in
+            for notification in notifications{
+                let request = notification.request
+                
+                guard
+                    request.identifier == LoopNotificationCategory.mealtimeReminder.rawValue,
+                    let scheduledDate = request.content.userInfo["scheduledDate"] as? Date,
+                    scheduledDate < now
+                else {
+                    continue
+                }
+                
+                identifiersToRemove.append(request.identifier)
+                break
+            }
+        }
+        
+        notificationCenter.removeDeliveredNotifications(withIdentifiers: identifiersToRemove)
+    }
+>>>>>>> Stashed changes
 
 
     static func removeExpiredMealNotifications(now: Date = Date(), notificationCategory: LoopNotificationCategory) {

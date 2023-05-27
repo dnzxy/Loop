@@ -56,7 +56,29 @@ class MealtimeReminderManager {
 //            NotificationManager.sendMealtimeReminderNotification(mealtime: reminderDate)
 //        }
         
+<<<<<<< Updated upstream
 //        NotificationManager.sendMealtimeReminderNotification(carbEntry: carbEntrymealtime: reminderDate)
+=======
+        // store carb entries (flagged for mealtime reminder in carb entry view) in memory
+        futureCarbEntries.append(carbEntry)
+        
+        // collect all reminder dates, set takes care of duplicates
+        var reminderDates = Set(futureCarbEntries.map({ $0.startDate }))
+        
+        // remove all notifications with dates that are already in there
+        // and remove expired notifications
+        NotificationManager.removeUnnecessaryMealtimeReminderNotifications(reminderDates: reminderDates)
+        
+        // add new future entry date to set of reminder dates
+        if !reminderDates.contains(carbEntry.startDate) {
+            reminderDates.insert(carbEntry.startDate)
+        }
+        
+        // (re-)schedule reminder(s)
+        for reminderDate in reminderDates {
+            NotificationManager.sendMealtimeReminderNotification(mealtime: reminderDate)
+        }
+>>>>>>> Stashed changes
     }
     
     func removeExpiredEntries() {
